@@ -1,0 +1,250 @@
+// --- Auth Check ---
+const token = localStorage.getItem('token');
+if (!token) window.location.href = 'login.html';
+
+// --- State ---
+let currentSection = 'profile';
+let currentData = [];
+let editingId = null;
+
+// --- Selectors ---
+const contentArea = document.getElementById('content-area');
+const sectionTitle = document.getElementById('section-title');
+const addBtn = document.getElementById('add-btn');
+const navItems = document.querySelectorAll('.nav-item');
+const modal = document.getElementById('modal');
+const formFields = document.getElementById('form-fields');
+const modalTitle = document.getElementById('modal-title');
+const modalForm = document.getElementById('modal-form');
+
+// --- API Helpers ---
+const api = {
+    async get(endpoint) {
+        const res = await fetch(`/api/${endpoint}`);
+        return res.json();
+    },
+    async post(endpoint, data) {
+        const res = await fetch(`/api/${endpoint}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify(data)
+        });
+        return res.json();
+    },
+    async put(endpoint, data) {
+        const res = await fetch(`/api/${endpoint}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify(data)
+        });
+        return res.json();
+    },
+    async delete(endpoint) {
+        const res = await fetch(`/api/${endpoint}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        return res.json();
+    }
+};
+
+// --- Utils ---
+function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.innerText = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+function openModal(title, id = null) {
+    editingId = id;
+    modalTitle.innerText = title;
+    renderFormFields();
+    modal.style.display = 'flex';
+}
+
+function closeModal() {
+    modal.style.display = 'none';
+    modalForm.reset();
+    editingId = null;
+}
+
+// --- Data Rendering ---
+async function loadSection(section) {
+    currentSection = section;
+    sectionTitle.innerText = section.charAt(0).toUpperCase() + section.slice(1);
+    addBtn.style.display = section === 'profile' ? 'none' : 'block';
+    contentArea.innerHTML = '<p style="color:var(--text-muted)">Loading...</p>';
+
+    try {
+        currentData = await api.get(section);
+        renderContent();
+    } catch (err) {
+        contentArea.innerHTML = `<p style="color:#ff4a4a">Error loading data.</p>`;
+    }
+}
+
+function renderContent() {
+    if (currentSection === 'profile') {
+        renderProfileSection();
+    } else {
+        renderGridSection();
+    }
+}
+
+function renderProfileSection() {
+    const d = currentData || {};
+    contentArea.innerHTML = `
+        <div class="item-card" style="max-width: 600px">
+            <div style="margin-bottom:20px">
+                <label style="color:var(--text-muted); font-size:0.8rem">Name</label>
+                <p style="font-size:1.2rem; font-weight:700">${d.name || 'Not set'}</p>
+            </div>
+            <div style="margin-bottom:20px">
+                <label style="color:var(--text-muted); font-size:0.8rem">Email</label>
+                <p>${d.email || 'Not set'}</p>
+            </div>
+            <div style="margin-bottom:20px">
+                <label style="color:var(--text-muted); font-size:0.8rem">Description</label>
+                <p>${d.description || 'Not set'}</p>
+            </div>
+            <button class="btn-add" onclick="openModal('Edit Profile')">Edit Profile</button>
+        </div>
+    `;
+}
+
+function renderGridSection() {
+    if (!currentData || currentData.length === 0) {
+        contentArea.innerHTML = `<p style="color:var(--text-muted)">No items found.</p>`;
+        return;
+    }
+
+    contentArea.innerHTML = `
+        <div class="data-grid">
+            ${currentData.map(item => `
+                <div class="item-card">
+                    <div class="item-header">
+                        <span class="item-title">${item.title || item.degree || item.company || 'Unnamed Item'}</span>
+                        <div class="item-actions">
+                            <span class="action-btn edit-btn" onclick="openModal('Edit Item', '${item._id}')">Edit</span>
+                            <span class="action-btn delete-btn" onclick="deleteItem('${item._id}')">Delete</span>
+                        </div>
+                    </div>
+                    <p style="color:var(--text-muted); font-size:0.9rem">${item.description || item.school || ''}</p>
+                </div>
+            `).join('')}
+        </div>
+    `;
+}
+
+// --- Form Handling ---
+function renderFormFields() {
+    let html = '';
+    const item = editingId ? currentData.find(i => i._id === editingId) : (currentSection === 'profile' ? currentData : {});
+
+    if (currentSection === 'profile') {
+        html = `
+            <div class="form-group"><label>Name</label><input type="text" name="name" value="${item.name || ''}" required></div>
+            <div class="form-group"><label>Email</label><input type="email" name="email" value="${item.email || ''}" required></div>
+            <div class="form-group"><label>Tagline</label><input type="text" name="tagline" value="${item.tagline || ''}" required></div>
+            <div class="form-group"><label>Description</label><textarea name="description" rows="4" required>${item.description || ''}</textarea></div>
+            <div class="form-group"><label>Apps Built</label><input type="number" name="stats.appsBuilt" value="${item.stats?.appsBuilt || 0}"></div>
+            <div class="form-group"><label>Years Exp</label><input type="number" name="stats.yearsExp" value="${item.stats?.yearsExp || 0}"></div>
+        `;
+    } else if (currentSection === 'skills') {
+        html = `
+            <div class="form-group"><label>Title</label><input type="text" name="title" value="${item.title || ''}" required></div>
+            <div class="form-group"><label>Icon (Emoji or Icon Code)</label><input type="text" name="icon" value="${item.icon || ''}" required></div>
+            <div class="form-group">
+                <label>Type</label>
+                <select name="type">
+                    <option value="flutter" ${item.type === 'flutter' ? 'selected' : ''}>Flutter</option>
+                    <option value="android" ${item.type === 'android' ? 'selected' : ''}>Android</option>
+                    <option value="backend" ${item.type === 'backend' ? 'selected' : ''}>Backend</option>
+                    <option value="tools" ${item.type === 'tools' ? 'selected' : ''}>Tools</option>
+                </select>
+            </div>
+            <div class="form-group"><label>Description</label><textarea name="description" required>${item.description || ''}</textarea></div>
+        `;
+    } else if (currentSection === 'projects') {
+        html = `
+            <div class="form-group"><label>Project Title</label><input type="text" name="title" value="${item.title || ''}" required></div>
+            <div class="form-group"><label>Description</label><textarea name="description" required>${item.description || ''}</textarea></div>
+            <div class="form-group"><label>Main Tech</label><input type="text" name="mainTech" value="${item.mainTech || ''}" placeholder="e.g. Flutter & Firebase"></div>
+            <div class="form-group"><label>GitHub Link</label><input type="text" name="links.github" value="${item.links?.github || ''}"></div>
+            <div class="form-group"><label>Demo Link</label><input type="text" name="links.demo" value="${item.links?.demo || ''}"></div>
+        `;
+    } else if (currentSection === 'experience' || currentSection === 'education') {
+        const isEdu = currentSection === 'education';
+        html = `
+            <div class="form-group"><label>Period</label><input type="text" name="period" value="${item.period || ''}" placeholder="e.g. 2021 - Present" required></div>
+            <div class="form-group"><label>${isEdu ? 'Degree' : 'Role Title'}</label><input type="text" name="${isEdu ? 'degree' : 'title'}" value="${item[isEdu ? 'degree' : 'title'] || ''}" required></div>
+            <div class="form-group"><label>${isEdu ? 'School/Uni' : 'Company'}</label><input type="text" name="${isEdu ? 'school' : 'company'}" value="${item[isEdu ? 'school' : 'company'] || ''}" required></div>
+            <div class="form-group"><label>Description</label><textarea name="description" required>${item.description || ''}</textarea></div>
+        `;
+    }
+
+    formFields.innerHTML = html;
+}
+
+modalForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(modalForm);
+    const data = {};
+
+    // Basic flat object construction
+    formData.forEach((value, key) => {
+        if (key.includes('.')) {
+            const [p1, p2] = key.split('.');
+            if (!data[p1]) data[p1] = {};
+            data[p1][p2] = value;
+        } else {
+            data[key] = value;
+        }
+    });
+
+    try {
+        if (currentSection === 'profile') {
+            await api.put('profile', data);
+        } else if (editingId) {
+            await api.put(`${currentSection}/${editingId}`, data);
+        } else {
+            await api.post(currentSection, data);
+        }
+
+        showToast('Success! Data updated.');
+        closeModal();
+        loadSection(currentSection);
+    } catch (err) {
+        alert('Error saving data');
+    }
+});
+
+async function deleteItem(id) {
+    if (!confirm('Are you sure you want to delete this item?')) return;
+    try {
+        await api.delete(`${currentSection}/${id}`);
+        showToast('Item deleted.');
+        loadSection(currentSection);
+    } catch (err) {
+        alert('Error deleting item');
+    }
+}
+
+// --- Nav Handlers ---
+navItems.forEach(item => {
+    item.addEventListener('click', () => {
+        navItems.forEach(n => n.classList.remove('active'));
+        item.classList.add('active');
+        loadSection(item.dataset.section);
+    });
+});
+
+addBtn.addEventListener('click', () => openModal('Add New Item'));
+document.getElementById('logout-btn').addEventListener('click', () => {
+    localStorage.clear();
+    window.location.href = 'login.html';
+});
+
+// Initialize
+loadSection('profile');

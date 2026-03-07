@@ -4,11 +4,11 @@
  */
 require('dotenv').config();
 const mongoose = require('mongoose');
-const Profile = require('./models/Profile');
-const Skill = require('./models/Skill');
-const Project = require('./models/Project');
-const Experience = require('./models/Experience');
-const Education = require('./models/Education');
+const Profile = require('../src/models/Profile');
+const Skill = require('../src/models/Skill');
+const Project = require('../src/models/Project');
+const Experience = require('../src/models/Experience');
+const Education = require('../src/models/Education');
 
 async function seed() {
     await mongoose.connect(process.env.MONGO_URI);
@@ -74,36 +74,42 @@ async function seed() {
             desc: 'Full-featured e-commerce app with cart, wishlist, payment gateway, real-time order tracking and push notifications.',
             tech: ['Flutter', 'Firebase', 'Stripe', 'BLoC', 'GetX'],
             githubUrl: '#', demoUrl: '#',
+            images: ['https://images.unsplash.com/photo-1556742044-3c52d6e88c02?auto=format&fit=crop&w=800&q=80', 'https://images.unsplash.com/photo-1556740758-90de374c12ad?auto=format&fit=crop&w=800&q=80']
         },
         {
             title: 'HealthSync — Fitness Tracker', thumb: 2, mock: '💪', badgeType: 'android', order: 2,
             desc: 'Native Android health monitoring app with Google Fit integration, AI-powered insights and beautiful data visualizations.',
             tech: ['Kotlin', 'Jetpack Compose', 'Room DB', 'Google Fit', 'ML Kit'],
             githubUrl: '#', demoUrl: '#',
+            images: ['https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=800&q=80', 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?auto=format&fit=crop&w=800&q=80']
         },
         {
             title: 'ChatFlow — Messaging App', thumb: 3, mock: '💬', badgeType: 'flutter', order: 3,
             desc: 'Real-time cross-platform messaging app with end-to-end encryption, video calls, and group chat functionality.',
             tech: ['Flutter', 'Firebase RTDB', 'WebRTC', 'FCM', 'Riverpod'],
             githubUrl: '#', demoUrl: '#',
+            images: ['https://images.unsplash.com/photo-1611746872915-64382b5c76da?auto=format&fit=crop&w=800&q=80']
         },
         {
             title: 'FinTrack — Finance Manager', thumb: 4, mock: '💰', badgeType: 'flutter', order: 4,
             desc: 'Personal finance tracker with budget planning, expense categorization, analytics charts, and bank sync.',
             tech: ['Flutter', 'SQLite', 'Dio', 'Provider', 'FL Chart'],
             githubUrl: '#', demoUrl: '#',
+            images: ['https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&w=800&q=80']
         },
         {
             title: 'EduLearn — LMS App', thumb: 5, mock: '📚', badgeType: 'android', order: 5,
             desc: 'Learning management system with video streaming, quiz engine, offline downloads and progress tracking.',
             tech: ['Kotlin', 'ExoPlayer', 'Retrofit', 'MVVM', 'Coroutines'],
             githubUrl: '#', demoUrl: '#',
+            images: ['https://images.unsplash.com/photo-1501504905252-473c47e087f8?auto=format&fit=crop&w=800&q=80']
         },
         {
             title: 'DeliveryX — Logistics App', thumb: 6, mock: '🚚', badgeType: 'flutter', order: 6,
             desc: 'Food and parcel delivery platform with real-time GPS tracking, driver app, and admin dashboard.',
             tech: ['Flutter', 'Google Maps', 'Firebase', 'GetX', 'Node.js'],
             githubUrl: '#', demoUrl: '#',
+            images: ['https://images.unsplash.com/photo-1580915411954-282cb1b0d780?auto=format&fit=crop&w=800&q=80']
         },
     ]);
 
